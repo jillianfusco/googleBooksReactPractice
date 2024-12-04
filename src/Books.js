@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SearchArea from './SearchArea';
 import BookList from './BookList';
 import './App.css';
@@ -17,24 +17,45 @@ const Books = () => {
     const searchBook = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('https://www.googleapis.com/books/v1/volumes?q=${searchField}');
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${searchField}`);
             const data = await response.json();
-            const cleanData = cleanBookData(data.items);
-            setBooks(cleanData);
+            const cleanedData = cleanData(data.items);
+            setBooks(cleanedData);
         } catch (error) {
             console.error('Error fetching books:', error);
         }
     };
 
     //clean fetched book data
-    const cleanBookData = (data) => {
-        return data.map((book) => ({
-            title: book.volumeInfo.title || 'No title',
-            author: book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author',
-            publishedDate: book.volumeInfo.publishedDate || '0000',
-            image: book.volumeInfo.imageLinks?.thumbnail || 'https://vignette.wikia.nocookie.net/pandorahearts/images/a/ad/Not_available.jpg/revision/latest?cb=20141028171337',
-            }));
+    const cleanData = (data) => {
+        const cleanedData = data.map((book) => {
+            // Ensure volumeInfo exists
+            const volumeInfo = book.volumeInfo || {};
+    
+            // Ensure publishedDate exists
+            if (!volumeInfo.hasOwnProperty('publishedDate')) {
+                volumeInfo['publishedDate'] = '0000';
+            }
+    
+            // Ensure imageLinks exists with a default thumbnail
+            if (!volumeInfo.hasOwnProperty('imageLinks')) {
+                volumeInfo['imageLinks'] = {
+                    thumbnail: 'https://vignette.wikia.nocookie.net/pandorahearts/images/a/ad/Not_available.jpg/revision/latest?cb=20141028171337',
+                };
+            }
+    
+            return {
+                title: volumeInfo.title || 'No Title',
+                author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author',
+                publishedDate: volumeInfo.publishedDate,
+                image: volumeInfo.imageLinks.thumbnail,
+            };
+        });
+    
+        return cleanedData;
     };
+    
+    
 
     //add book to TBR
     const addToTBR = (book) => {
